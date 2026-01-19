@@ -62,8 +62,8 @@
 
         <hr>
 
-        <label for="dataHora">Digite a data e hora (formato: YYYY-MM-DD HH:MM):</label><br>
-        <input type="text" id="dataHora" placeholder="2025-12-30 10:15" style="width: 300px;">
+        <label for="dataHora">Digite a data e hora (formato: DD/MM/YYYY HH:MM):</label><br>
+        <input type="text" id="dataHora" placeholder="30/12/2025 10:15" style="width: 300px;">
         <button onclick="testar()">Verificar</button>
 
         <div id="resultado"></div>
@@ -71,15 +71,21 @@
         <hr>
         <h3>Testes Rápidos:</h3>
         <button onclick="testarAgora()">Testar Agora</button>
-        <button onclick="testarExemplo('2025-12-30 10:15')">Terça 10:15</button>
-        <button onclick="testarExemplo('2025-12-28 11:00')">Domingo 11:00</button>
-        <button onclick="testarExemplo('2025-12-26 21:00')">Sexta 21:00</button>
+        <button onclick="testarExemplo('30/12/2025 10:15')">Terça 10:15</button>
+        <button onclick="testarExemplo('28/12/2025 11:00')">Domingo 11:00</button>
+        <button onclick="testarExemplo('26/12/2025 21:00')">Sexta 21:00</button>
     </div>
 
     <script>
-        // Cole aqui o código do verificarHorario.js
+        function converterParaData(dataHora) {
+          const [dataParte, horaParte] = dataHora.split(' ');
+          const [dia, mes, ano] = dataParte.split('/');
+          const [horas, minutos] = horaParte.split(':');
+          return new Date(ano, mes - 1, dia, horas, minutos);
+        }
+
         function verificarHorarioFuncionamento(dataHora) {
-          const data = new Date(dataHora);
+          const data = converterParaData(dataHora);
           const diaSemana = data.getDay();
           const hora = data.getHours();
           const minutos = data.getMinutes();
@@ -119,9 +125,9 @@
 
         function testarAgora() {
             const agora = new Date();
-            const dataHora = agora.toISOString().slice(0, 16).replace('T', ' ');
-            const resultado = verificarHorarioFuncionamento(dataHora);
-            mostrarResultado('AGORA: ' + dataHora, resultado);
+            const dataHoraBR = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()} ${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+            const resultado = verificarHorarioFuncionamento(dataHoraBR);
+            mostrarResultado('AGORA: ' + dataHoraBR, resultado);
         }
 
         function testarExemplo(dataHora) {
