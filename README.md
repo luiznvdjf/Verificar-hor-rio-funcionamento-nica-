@@ -1,0 +1,1 @@
+# Verificar-hor-rio-funcionamento-nica-
