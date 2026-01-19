@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Verificador de Horário</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .resultado {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .dentro {
+            background: #d4edda;
+            color: #155724;
+        }
+        .fora {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕐 Verificador de Horário de Funcionamento</h1>
+        
+        <p><strong>Horário de Funcionamento:</strong></p>
+        <ul>
+            <li>Segunda a Quinta-feira: 08:00 às 20:00</li>
+            <li>Sexta-feira: 08:00 às 19:00</li>
+            <li>Finais de semana e feriados: FECHADO</li>
+        </ul>
+
+        <hr>
+
+        <label for="dataHora">Digite a data e hora (formato: YYYY-MM-DD HH:MM):</label><br>
+        <input type="text" id="dataHora" placeholder="2025-12-30 10:15" style="width: 300px;">
+        <button onclick="testar()">Verificar</button>
+
+        <div id="resultado"></div>
+
+        <hr>
+        <h3>Testes Rápidos:</h3>
+        <button onclick="testarAgora()">Testar Agora</button>
+        <button onclick="testarExemplo('2025-12-30 10:15')">Terça 10:15</button>
+        <button onclick="testarExemplo('2025-12-28 11:00')">Domingo 11:00</button>
+        <button onclick="testarExemplo('2025-12-26 21:00')">Sexta 21:00</button>
+    </div>
+
+    <script>
+        // Cole aqui o código do verificarHorario.js
+        function verificarHorarioFuncionamento(dataHora) {
+          const data = new Date(dataHora);
+          const diaSemana = data.getDay();
+          const hora = data.getHours();
+          const minutos = data.getMinutes();
+          const horarioAtual = hora + minutos / 60;
+          
+          if (diaSemana === 0 || diaSemana === 6) {
+            return "Está fora do horário de funcionamento (final de semana)";
+          }
+          
+          if (diaSemana >= 1 && diaSemana <= 4) {
+            if (horarioAtual >= 8 && horarioAtual < 20) {
+              return "Está dentro do horário de funcionamento";
+            } else {
+              return "Está fora do horário de funcionamento";
+            }
+          }
+          
+          if (diaSemana === 5) {
+            if (horarioAtual >= 8 && horarioAtual < 19) {
+              return "Está dentro do horário de funcionamento";
+            } else {
+              return "Está fora do horário de funcionamento";
+            }
+          }
+        }
+
+        function testar() {
+            const input = document.getElementById('dataHora').value;
+            if (!input) {
+                alert('Por favor, digite uma data e hora!');
+                return;
+            }
+            
+            const resultado = verificarHorarioFuncionamento(input);
+            mostrarResultado(input, resultado);
+        }
+
+        function testarAgora() {
+            const agora = new Date();
+            const dataHora = agora.toISOString().slice(0, 16).replace('T', ' ');
+            const resultado = verificarHorarioFuncionamento(dataHora);
+            mostrarResultado('AGORA: ' + dataHora, resultado);
+        }
+
+        function testarExemplo(dataHora) {
+            const resultado = verificarHorarioFuncionamento(dataHora);
+            mostrarResultado(dataHora, resultado);
+        }
+
+        function mostrarResultado(input, resultado) {
+            const div = document.getElementById('resultado');
+            const classe = resultado.includes('dentro') ? 'dentro' : 'fora';
+            div.className = 'resultado ' + classe;
+            div.innerHTML = `
+                <strong>📅 Entrada:</strong> ${input}<br>
+                <strong>✅ Resultado:</strong> ${resultado}
+            `;
+        }
+    </script>
+</body>
+</html>
