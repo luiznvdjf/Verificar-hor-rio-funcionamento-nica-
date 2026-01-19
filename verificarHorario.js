@@ -1,148 +1,112 @@
 /**
- * Verifica se o horário atual está dentro do horário de funcionamento
- * Horário de funcionamento:
- * - Segunda a Quinta-feira: 08:00 às 20:00
- * - Sexta-feira: 08:00 às 19:00
- * - Finais de semana e feriados: FECHADO
+ * AJUDA: Converte string "DD/MM/YYYY HH:mm" para Objeto Date
  */
+function converterStringParaData(dataString) {
+  // Espera formato: "30/12/2025 10:15"
+  const [dataPart, horaPart] = dataString.split(' ');
+  const [dia, mes, ano] = dataPart.split('/').map(Number);
+  const [hora, minuto] = horaPart.split(':').map(Number);
 
-function verificarHorarioFuncionamento(dataHora) {
-  // Converte a string de entrada para objeto Date
-  const data = new Date(dataHora);
-  
-  // Extrai informações da data
-  const diaSemana = data.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-  const hora = data.getHours();
-  const minutos = data.getMinutes();
-  const horarioAtual = hora + minutos / 60; // Converte para decimal
-  
-  // Verifica se é final de semana
-  if (diaSemana === 0 || diaSemana === 6) {
-    return "Está fora do horário de funcionamento (final de semana)";
-  }
-  
-  // Verifica se é feriado (opcional - você pode buscar via API)
-  if (ehFeriado(data)) {
-    return "Está fora do horário de funcionamento por ser feriado";
-  }
-  
-  // Segunda a Quinta-feira (1-4): 08:00 às 20:00
-  if (diaSemana >= 1 && diaSemana <= 4) {
-    if (horarioAtual >= 8 && horarioAtual < 20) {
-      return "Está dentro do horário de funcionamento";
-    } else {
-      return "Está fora do horário de funcionamento";
-    }
-  }
-  
-  // Sexta-feira (5): 08:00 às 19:00
-  if (diaSemana === 5) {
-    if (horarioAtual >= 8 && horarioAtual < 19) {
-      return "Está dentro do horário de funcionamento";
-    } else {
-      return "Está fora do horário de funcionamento";
-    }
-  }
+  // Mês no JS começa em 0 (Janeiro = 0, Dezembro = 11)
+  return new Date(ano, mes - 1, dia, hora, minuto);
 }
 
 /**
- * Verifica se a data é feriado
- * Aqui você pode consumir a API de feriados do Brasil
+ * Verifica horários (Sem consulta de API de feriados)
+ * Útil para validações rápidas locais
+ */
+function verificarHorarioSimples(dataString) {
+  const data = converterStringParaData(dataString); // Conversão aqui
+  
+  const diaSemana = data.getDay(); // 0 = Domingo ... 6 = Sábado
+  const hora = data.getHours();
+  const minutos = data.getMinutes();
+  const horarioAtual = hora + (minutos / 60);
+
+  // 1. Finais de semana
+  if (diaSemana === 0 || diaSemana === 6) {
+    return `[${dataString}] Fechado (Final de semana)`;
+  }
+
+  // 2. Regras de horário
+  // Segunda a Quinta (1-4): 08:00 as 20:00
+  if (diaSemana >= 1 && diaSemana <= 4) {
+    if (horarioAtual >= 8 && horarioAtual < 20) {
+      return `[${dataString}] Aberto`;
+    }
+  }
+
+  // Sexta (5): 08:00 as 19:00
+  if (diaSemana === 5) {
+    if (horarioAtual >= 8 && horarioAtual < 19) {
+      return `[${dataString}] Aberto`;
+    }
+  }
+
+  return `[${dataString}] Fechado (Fora do horário)`;
+}
+
+/**
+ * Consulta API para saber se é feriado
  */
 async function ehFeriado(data) {
   try {
     const ano = data.getFullYear();
+    // Formata para o padrão da API (YYYY-MM-DD)
     const mes = String(data.getMonth() + 1).padStart(2, '0');
     const dia = String(data.getDate()).padStart(2, '0');
     const dataFormatada = `${ano}-${mes}-${dia}`;
     
-    // Consome a API de feriados
+    // API BrasilAPI
     const response = await fetch(`https://brasilapi.com.br/api/feriados/v1/${ano}`);
     const feriados = await response.json();
     
-    // Verifica se a data está na lista de feriados
-    return feriados.some(feriado => feriado.date === dataFormatada);
+    // Procura a data na lista
+    const feriadoEncontrado = feriados.find(f => f.date === dataFormatada);
+    return feriadoEncontrado ? feriadoEncontrado.name : false;
+    
   } catch (error) {
-    console.error('Erro ao buscar feriados:', error);
-    return false; // Se houver erro, assume que não é feriado
+    console.error('Erro na API de feriados:', error);
+    return false; 
   }
 }
 
 /**
- * Função assíncrona para verificar com feriados da API
+ * Função Principal (Completa com Feriados)
  */
-async function verificarHorarioComFeriados(dataHora) {
-  const data = new Date(dataHora);
-  const diaSemana = data.getDay();
-  const hora = data.getHours();
-  const minutos = data.getMinutes();
-  const horarioAtual = hora + minutos / 60;
+async function verificarHorarioCompleto(dataString) {
+  const data = converterStringParaData(dataString);
   
-  // Verifica se é final de semana
-  if (diaSemana === 0 || diaSemana === 6) {
-    return "Está fora do horário de funcionamento (final de semana)";
+  // 1. Verifica Feriado antes de tudo (requer await)
+  const nomeFeriado = await ehFeriado(data);
+  if (nomeFeriado) {
+    return `[${dataString}] Fechado (Feriado: ${nomeFeriado})`;
   }
-  
-  // Verifica se é feriado via API
-  const isFeriado = await ehFeriado(data);
-  if (isFeriado) {
-    return "Está fora do horário de funcionamento por ser feriado";
-  }
-  
-  // Segunda a Quinta-feira (1-4): 08:00 às 20:00
-  if (diaSemana >= 1 && diaSemana <= 4) {
-    if (horarioAtual >= 8 && horarioAtual < 20) {
-      return "Está dentro do horário de funcionamento";
-    } else {
-      return "Está fora do horário de funcionamento";
-    }
-  }
-  
-  // Sexta-feira (5): 08:00 às 19:00
-  if (diaSemana === 5) {
-    if (horarioAtual >= 8 && horarioAtual < 19) {
-      return "Está dentro do horário de funcionamento";
-    } else {
-      return "Está fora do horário de funcionamento";
-    }
-  }
+
+  // 2. Se não for feriado, reutiliza a lógica simples
+  // Mas precisamos tratar o retorno da função simples para manter consistência
+  return verificarHorarioSimples(dataString);
 }
 
-// ========== EXEMPLOS DE USO ==========
+// ========== EXEMPLOS DE USO (NOVO FORMATO) ==========
 
-// Exemplo 1: Terça-feira dentro do horário
-console.log("Exemplo 1:");
-console.log("Entrada: 2025-12-30 10:15 (terça-feira)");
-console.log("Resultado:", verificarHorarioFuncionamento("2025-12-30 10:15"));
-console.log("");
+(async () => {
+  console.log("--- TESTES SÍNCRONOS (Apenas horário) ---");
+  console.log(verificarHorarioSimples("30/12/2025 10:15")); // Terça - Aberto
+  console.log(verificarHorarioSimples("30/12/2025 21:00")); // Terça - Fechado
+  console.log(verificarHorarioSimples("28/12/2025 14:00")); // Domingo - Fechado
 
-// Exemplo 2: Terça-feira fora do horário
-console.log("Exemplo 2:");
-console.log("Entrada: 2025-12-30 19:10 (terça-feira)");
-console.log("Resultado:", verificarHorarioFuncionamento("2025-12-30 19:10"));
-console.log("");
+  console.log("\n--- TESTES ASSÍNCRONOS (Com Feriados) ---");
+  
+  // Exemplo: Natal
+  const testeNatal = await verificarHorarioCompleto("25/12/2025 14:00");
+  console.log(testeNatal); // Deve retornar Fechado (Natal)
 
-// Exemplo 3: Domingo (final de semana)
-console.log("Exemplo 3:");
-console.log("Entrada: 2025-12-28 11:00 (domingo)");
-console.log("Resultado:", verificarHorarioFuncionamento("2025-12-28 11:00"));
-console.log("");
-
-// Exemplo 4: Quinta-feira (Natal) - precisa usar a versão com API
-console.log("Exemplo 4 (com API de feriados):");
-console.log("Entrada: 2025-12-25 10:00 (quinta-feira - Natal)");
-verificarHorarioComFeriados("2025-12-25 10:00").then(resultado => {
-  console.log("Resultado:", resultado);
-});
-console.log("");
-
-// Exemplo 5: Sexta-feira dentro do horário
-console.log("Exemplo 5:");
-console.log("Entrada: 2025-12-26 18:00 (sexta-feira)");
-console.log("Resultado:", verificarHorarioFuncionamento("2025-12-26 18:00"));
-console.log("");
-
-// Exemplo 6: Sexta-feira após o horário
-console.log("Exemplo 6:");
-console.log("Entrada: 2025-12-26 19:30 (sexta-feira)");
-console.log("Resultado:", verificarHorarioFuncionamento("2025-12-26 19:30"));
+  // Exemplo: Confraternização Universal
+  const testeAnoNovo = await verificarHorarioCompleto("01/01/2026 09:00");
+  console.log(testeAnoNovo); // Deve retornar Fechado (Confraternização Universal)
+  
+  // Exemplo: Dia comum
+  const testeDiaComum = await verificarHorarioCompleto("05/06/2025 10:00");
+  console.log(testeDiaComum); // Aberto
+})();
